@@ -99,6 +99,10 @@ avnav.gui.Mainpage.prototype.btnConnected=function (button,ev){
     $(document).trigger(avnav.util.PropertyChangeEvent.EVENT_TYPE,new avnav.util.PropertyChangeEvent(this.gui.properties));
 
 };
+avnav.gui.Mainpage.prototype.btnShowRouteList=function (button,ev){
+    log("ShowSettings clicked");
+    this.gui.showPage('navpage',{route:"test"});
+};
 /**
  * create the page instance
  */

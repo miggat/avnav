@@ -111,6 +111,7 @@ var propertyDefinitions=function(){
         routingServerError: new avnav.util.Property(true,"ServerError",avnav.util.PropertyType.CHECKBOX), //notify comm errors to server
         routingTextSize:new avnav.util.Property( 14,"Text Size(px)",avnav.util.PropertyType.RANGE,[8,36]), //in px
         centerName: new avnav.util.Property( "avnav.center"),
+        chartStorageName: new avnav.util.Property("avnav.map"),
         statusErrorImage: new avnav.util.Property( "images/RedBubble40.png"),
         statusOkImage: new avnav.util.Property( "images/GreenBubble40.png"),
         statusIcons: {

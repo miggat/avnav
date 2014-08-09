@@ -29,7 +29,7 @@ avnav.nav.Leg=function(from,to,active,opt_routeName,opt_routeTarget){
     this.active=active;
     /**
      * if set the route with this name is active
-     * @type {boolean}
+     * @type {string}
      */
     this.name=opt_routeName;
     /**
@@ -295,6 +295,12 @@ avnav.nav.RouteData=function(propertyHandler,navobject){
      * @type {boolean}
      */
     this.isApproaching=false;
+    /**
+     * if this is set to some name we are editing this route
+     * this stops the switching to the next WP...
+     * @type {undefined}
+     */
+    this.editingRoute=undefined;
     var self=this;
     $(document).on(avnav.util.PropertyChangeEvent.EVENT_TYPE, function(ev,evdata){
         self.propertyChange(evdata);
@@ -601,7 +607,7 @@ avnav.nav.RouteData.prototype.setActiveWp=function(id){
  * if the route is active
  */
 avnav.nav.RouteData.prototype.setActiveWpFromRoute=function(){
-    if (this.currentLeg.name){
+    if (this.currentLeg.name && this.editingRoute === undefined){
         if (this.activeWp != this.currentLeg.currentTarget){
             this.activeWp=this.currentLeg.currentTarget;
             this.navobject.routeEvent();
@@ -622,7 +628,7 @@ avnav.nav.RouteData.prototype.getActiveWpIdx=function(){
  * @returns {*}
  */
 avnav.nav.RouteData.prototype.getCurrentRouteTargetIdx=function(){
-    if (! this.currentLeg.name) return -1;
+    if (! this.currentLeg.name || this.editingRoute !== undefined) return -1;
     return this.currentLeg.currentTarget;
 };
 /**
@@ -663,14 +669,16 @@ avnav.nav.RouteData.prototype.deleteWp=function(id){
         id=this.activeWp;
     }
     if (id<0)id=0;
-    var changeTarget=this.currentLeg.name && id == this.currentLeg.currentTarget;
+    var changeTarget=this.currentLeg.name && id == this.currentLeg.currentTarget && this.editingRoute === undefined;
     if (this.currentRoute.points){
         if (id >= this.currentRoute.points.length)id=this.currentRoute.points.length-1;
         this.currentRoute.points.splice(id,1);
-        if (id <= this.currentLeg.currentTarget && this.currentLeg.currentTarget > 0) this.currentLeg.currentTarget--;
         if (id <= this.activeWp && this.activeWp > 0) this.activeWp--;
         if (this.activeWp >= this.currentRoute.points.length)this.activeWp=this.currentRoute.points.length-1;
-        if (this.currentLeg.currentTarget >= this.currentRoute.points.length)this.currentLeg.currentTarget=this.currentRoute.points.length-1;
+        if (this.editingRoute === undefined) {
+            if (id <= this.currentLeg.currentTarget && this.currentLeg.currentTarget > 0) this.currentLeg.currentTarget--;
+            if (this.currentLeg.currentTarget >= this.currentRoute.points.length)this.currentLeg.currentTarget = this.currentRoute.points.length - 1;
+        }
     }
     if (changeTarget) this.routeOn(avnav.nav.RoutingMode.ROUTE,true);
     this.saveRoute();
@@ -695,7 +703,7 @@ avnav.nav.RouteData.prototype.changeWp=function(id,point){
         }
         this.currentRoute.points[id]=point;
     }
-    if (this.currentLeg.name && id == this.currentLeg.currentTarget){
+    if (this.currentLeg.name && id == this.currentLeg.currentTarget && this.editingRoute === undefined){
         this.routeOn(avnav.nav.RoutingMode.ROUTE,true);
     }
     this.saveRoute();
@@ -737,7 +745,7 @@ avnav.nav.RouteData.prototype.deleteRoute=function(){
     this.currentRoute.points=[];
     this.activeWp=0;
     this.saveRoute();
-    if (this.currentLeg.name){
+    if (this.currentLeg.name && this.editingRoute === undefined){
         this.currentLeg.name=undefined;
         this.currentLeg.currentTarget=-1;
         this.currentLeg.active=false;
@@ -750,6 +758,7 @@ avnav.nav.RouteData.prototype.deleteRoute=function(){
  */
 avnav.nav.RouteData.prototype.checkNextWp=function(){
     if (! this.currentLeg.name) return;
+    if (this.editingRoute !== undefined) return;
     var boat=this.navobject.getRawData(avnav.nav.NavEventType.GPS);
     //TODO: switch of routing?!
     if (! boat.valid) return;
@@ -793,9 +802,35 @@ avnav.nav.RouteData.prototype.checkNextWp=function(){
     } catch (ex){} //ignore errors
 };
 
+/**
+ * are we approaching a WP?
+ * @returns {boolean|avnav.nav.RouteData.isApproaching|*}
+ */
 avnav.nav.RouteData.prototype.getApproaching=function(){
     return this.isApproaching;
 };
+
+/**
+ * start route editing
+ * @param name
+ */
+avnav.nav.RouteData.prototype.startEditing=function(name){
+    this.editingRoute=name;
+    this.isApproaching=false;
+    //TODO: load route...
+};
+
+/**
+ * end route editing
+ * should load the active route...
+ */
+avnav.nav.RouteData.prototype.stopEditing=function(){
+    if (this.editingRoute === undefined) return;
+    this.editingRoute=undefined;
+    this.serverRoute=new avnav.nav.Route(); //this should trigger an update from the server
+    //TODO: local route naming handling, different names on server,...
+};
+
 
 /**
  *

@@ -163,14 +163,14 @@ avnav.map.RouteLayer.prototype.onPostCompose=function(center,drawing) {
     var gps=this.navobject.getRawData(avnav.nav.NavEventType.GPS);
     var to=leg.to?this.mapholder.pointToMap(leg.to.toCoord()):undefined;
     var prop=this.mapholder.getProperties().getProperties();
-    var drawNav=prop.layers.boat&&prop.layers.nav;
+    var drawNav=prop.layers.boat&&prop.layers.nav&&this.mapholder.isFeatureActive(avnav.map.Features.ROUTE);
     var route=this.navobject.getRoutingData().getCurrentRoute();
     var text,wp;
     if (! drawNav) {
         this.routePixel=[];
         return;
     }
-    if (leg.active && gps.valid ){
+    if (leg.active && gps.valid && this.mapholder.isFeatureActive(avnav.map.Features.HEADING)){
         var line=[this.mapholder.pointToMap(gps.toCoord()),to];
         drawing.drawLineToContext(line,this.courseStyle);
     }
@@ -183,7 +183,7 @@ avnav.map.RouteLayer.prototype.onPostCompose=function(center,drawing) {
             style=this.normalWpStyle;
             if (i == active) style=this.activeWpStyle;
             else {
-                if (i == routeTarget) style=this.routeTargetStyle;
+                if (i == routeTarget && this.mapholder.isFeatureActive(avnav.map.Features.HEADING)) style=this.routeTargetStyle;
             }
             drawing.drawBubbleToContext(this.currentRoutePoints[i], prop.routeWpSize,
                 style);
@@ -197,7 +197,7 @@ avnav.map.RouteLayer.prototype.onPostCompose=function(center,drawing) {
         this.routePixel=[];
 
     }
-    if (to && (routeTarget<0) && leg.active){
+    if (to && (routeTarget<0) && leg.active && this.mapholder.isFeatureActive(avnav.map.Features.HEADING)){
         drawing.drawImageToContext(to,this.markerStyle.image,this.markerStyle);
     }
 

@@ -48,6 +48,17 @@ avnav.gui.Navpage=function(){
      */
     this.lastGpsLock=false;
 
+    /**
+     * route editing mode
+     * @type {boolean}
+     */
+    this.routeEditorMode=false;
+    /**
+     * load chart when showing first
+     * @type {boolean}
+     */
+    this.firstShow=true;
+
     this.waypointPopUp='#avi_waypoint_popup';
     /**
      * @private
@@ -79,9 +90,12 @@ avnav.gui.Navpage.prototype.showPage=function(options){
     if (!this.gui) return;
     this.fillDisplayFromGps();
     var newMap=false;
-    if (options) {
-        this.options_=options;
+    if (options && options.url) {
         newMap=true;
+        if (this.options_){
+            if (this.options_.url == options.url && this.options_.charturl == options.charturl) newMap=false;
+        }
+        this.options_=options;
     }
     else {
         if (! this.options_){
@@ -89,7 +103,23 @@ avnav.gui.Navpage.prototype.showPage=function(options){
             return;
         }
     }
-    if (newMap) {
+    if (options.route){
+        this.routeEditorMode=true;
+        this.options_.route=options.route;
+        //route editor mode
+        this.getMap().hideFeatures([avnav.map.Features.AIS,avnav.map.Features.HEADING,avnav.map.Features.TRACK,
+            avnav.map.Features.GPSLOCK,avnav.map.Features.ROTATE]);
+        this.getMap().setMapRotation(0);
+        this.getDiv().find('.avn_hide_inrte').hide();
+        this.navobject.getRoutingData().startEditing(options.route)
+    }
+    else{
+        this.routeEditorMode=false;
+        this.getMap().showFeatures();
+        this.getDiv().find('.avn_hide_inrte').show();
+        this.navobject.getRoutingData().stopEditing();
+    }
+    if (newMap || this.firstShow) {
         //chartbase: optional url for charts
         //list: the base url
         var chartbase = this.options_.charturl;
@@ -97,6 +127,13 @@ avnav.gui.Navpage.prototype.showPage=function(options){
         if (!chartbase) {
             chartbase = list;
         }
+        try{
+            var encoded=JSON.stringify({
+                url: list,
+                charturl: chartbase
+            });
+            localStorage.setItem(this.gui.properties.getProperties().chartStorageName,encoded);
+        }catch (e){}
         if (!list.match(/^http:/)) {
             if (list.match(/^\//)) {
                 list = window.location.href.replace(/^([^\/:]*:\/\/[^\/]*).*/, '$1') + list;
@@ -119,10 +156,11 @@ avnav.gui.Navpage.prototype.showPage=function(options){
             }
         });
     }
+    this.firstShow=false;
     this.updateMainPanelSize('#'+this.mapdom);
     this.getMap().updateSize();
     this.buttonUpdate(true);
-    if (!this.gui.properties.getProperties().layers.ais){
+    if (!this.gui.properties.getProperties().layers.ais || this.getMap().isFeatureActive(avnav.map.Features.AIS)){
         //hide the AIS panel if switched off
         //showing will be done by the AIS event
         if (this.showHideAdditionalPanel('#aisInfo', false, '#' + this.mapdom))
@@ -130,7 +168,12 @@ avnav.gui.Navpage.prototype.showPage=function(options){
     }
     this.updateAisPanel();
     this.fillDisplayFromGps();
-    if (!this.gui.properties.getProperties().layers.nav) this.hideRouting();
+    if (this.options_.route){
+        this.showRouting();
+    }
+    else {
+        if (!this.gui.properties.getProperties().layers.nav) this.hideRouting();
+    }
     this.handleRouteDisplay();
     this.updateRoutePoints(true);
     if (! this.routingVisible) this.navobject.getRoutingData().setActiveWpFromRoute();
@@ -170,6 +213,18 @@ avnav.gui.Navpage.prototype.hidePage=function(){
  *
  */
 avnav.gui.Navpage.prototype.localInit=function(){
+    try {
+        var currentMap = localStorage.getItem(this.gui.properties.getProperties().chartStorageName);
+        if (currentMap) {
+            var decoded = JSON.parse(currentMap);
+            if (decoded.url){
+                this.options_={
+                    url: decoded.url,
+                    charturl: decoded.charturl
+                };
+            }
+        }
+    }catch (e){}
     $('#leftBottomMarker').click({page:this},function(ev){
         var navobject=ev.data.page.navobject;
         var leg=navobject.getRawData(avnav.nav.NavEventType.ROUTE);
@@ -242,6 +297,7 @@ avnav.gui.Navpage.prototype.fillDisplayFromGps=function(opt_names){
  */
 avnav.gui.Navpage.prototype.updateAisPanel=function() {
     if (!this.gui.properties.getProperties().layers.ais) return;
+    if (!this.getMap().isFeatureActive(avnav.map.Features.AIS)) return;
     var aisPanel = this.getDiv().find('.avn_aisInfo');
     if (aisPanel) {
         var nearestTarget = this.navobject.getAisData().getNearestAisTarget();
@@ -372,7 +428,7 @@ avnav.gui.Navpage.prototype.hideRouting=function() {
  */
 avnav.gui.Navpage.prototype.handleRouteDisplay=function() {
     var routeActive=this.navobject.getRoutingData().getCurrentRouteTargetIdx()>=0;
-    if (routeActive ){
+    if (routeActive && ! this.routeEditorMode){
         $('#avi_route_display').show();
         if (this.overlay){
             var h=this.overlay.height();

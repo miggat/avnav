@@ -90,6 +90,7 @@ all buttons with ids avb_... will call corresponding js functions
           <button id="avb_ShowSettings" type="button" class="avn_button"></button>
           <button id="avb_ShowHelp" type="button"  class="avn_button"></button>
           <button id="avb_Connected" type="button"  class="avn_button avn_toggleButton"></button>
+          <button id="avb_ShowRouteList" type="button"  class="avn_button">R</button>
       </div>
   </div>
   <!-- end mainPage -->
@@ -160,10 +161,10 @@ all buttons with ids avb_... will call corresponding js functions
                       <div id="avi_route_info_numPoints" class="avn_routeInfo avd_routeNumPoints"></div>
                       <div class="avn_route_label">Length:</div>
                       <div id="avi_route_info_length" class="avn_routeInfo avd_routeLen"></div>
-                      <div class="avn_route_label">toGo:</div>
-                      <div id="avi_route_info_remain" class="avn_routeInfo avd_routeRemain"></div>
-                      <div class="avn_route_label">ETA:</div>
-                      <div id="avi_route_info_eta" class="avn_routeInfo avd_routeEta"></div>
+                      <div class="avn_route_label avn_hide_inrte">toGo:</div>
+                      <div id="avi_route_info_remain" class="avn_routeInfo avd_routeRemain avn_hide_inrte"></div>
+                      <div class="avn_route_label avn_hide_inrte">ETA:</div>
+                      <div id="avi_route_info_eta" class="avn_routeInfo avd_routeEta avn_hide_inrte"></div>
                   </div>
                   <div id='avi_route_info_list' >
                   </div>
@@ -194,7 +195,7 @@ all buttons with ids avb_... will call corresponding js functions
                   <button id="avb_NavAdd" type="button" class="avn_button"></button>
                   <button id="avb_NavDelete" type="button" class="avn_button"></button>
                   <button id="avb_NavToCenter" type="button" class="avn_button"></button>
-                  <button id="avb_NavGoto" type="button" class="avn_button"></button>
+                  <button id="avb_NavGoto" type="button" class="avn_button avn_hide_inrte"></button>
                   <button id="avb_NavDeleteAll" type="button" class="avn_button"></button>
                   <button id="avb_NavWp" type="button"  class="avn_button avn_toggleButton"></button>
               </div>
@@ -271,10 +272,10 @@ all buttons with ids avb_... will call corresponding js functions
       <div class='avn_panel avn_right_panel'>
           <button id="avb_ZoomIn" type="button"  class="avn_button"></button>
           <button id="avb_ZoomOut" type="button"  class="avn_button"></button>
-          <button id="avb_LockPos" type="button"  class="avn_button avn_toggleButton"></button>
-          <button id="avb_LockMarker" type="button"  class="avn_button avn_toggleButton"></button>
-          <button id="avb_CourseUp" type="button"  class="avn_button avn_toggleButton"></button>
-          <button id="avb_ShowRoutePanel" type="button"  class="avn_button avn_toggleButton"></button>
+          <button id="avb_LockPos" type="button"  class="avn_button avn_toggleButton avn_hide_inrte"></button>
+          <button id="avb_LockMarker" type="button"  class="avn_button avn_toggleButton avn_hide_inrte"></button>
+          <button id="avb_CourseUp" type="button"  class="avn_button avn_toggleButton avn_hide_inrte"></button>
+          <button id="avb_ShowRoutePanel" type="button"  class="avn_button avn_toggleButton avn_hide_inrte"></button>
           <button id="avb_CancelNav" type="button"  class="avn_button"></button>
       </div>
   </div>

@@ -2,24 +2,22 @@
  * Created by andreas on 03.05.14.
  */
 avnav.provide('avnav.map.MapHolder');
-avnav.provide('avnav.map.LayerTypes');
+avnav.provide('avnav.map.Features');
 avnav.provide('avnav.map.MapEvent');
 
-
-
-
-
-
-
 /**
- * the types of the layers
- * @type {{TCHART: number, TNAV: number}}
+ * features that can be switched on/off
+ * @type {{CHART: number, AIS: number, TRACK: number, ROUTE: number, HEADING: number, BOAT: number}}
  */
-avnav.map.LayerTypes={
-    TCHART:0,
-    TNAV:1,
-    TTRACK:2,
-    TAIS:3
+avnav.map.Features={
+    CHART:0,
+    AIS:1,
+    TRACK:2,
+    ROUTE: 3,
+    HEADING: 4,
+    BOAT: 5,
+    GPSLOCK: 6,
+    ROTATE: 7
 };
 
 avnav.map.EventType={
@@ -136,6 +134,11 @@ avnav.map.MapHolder=function(properties,navobject){
      */
     this.routingActive=false;
     var self=this;
+    this.activeFeatures={};
+    var k;
+    for (k in avnav.map.Features){
+        this.activeFeatures[avnav.map.Features[k]]=true;
+    }
     $(document).on(avnav.nav.NavEvent.EVENT_TYPE, function(ev,evdata){
         self.navEvent(evdata);
     });
@@ -389,7 +392,7 @@ avnav.map.MapHolder.prototype.getCourseUp=function(){
  * @returns {boolean}
  */
 avnav.map.MapHolder.prototype.getGpsLock=function(){
-    return this.gpsLocked;
+    return this.gpsLocked && this.activeFeatures[avnav.map.Features.GPSLOCK];
 };
 
 /**
@@ -403,7 +406,7 @@ avnav.map.MapHolder.prototype.navEvent=function(evdata){
         var gps=this.navobject.getRawData(evdata.type);
         if (! gps.valid) return;
         this.navlayer.setBoatPosition(gps.toCoord(),gps.course);
-        if (this.gpsLocked) {
+        if (this.getGpsLock()) {
             this.setCenter(gps);
             var prop = this.properties.getProperties();
             if (this.courseUp) {
@@ -430,7 +433,6 @@ avnav.map.MapHolder.prototype.parseLayerlist=function(layerdata,baseurl){
     var ll=[];
     $(layerdata).find('TileMap').each(function(ln,tm){
         var rt={};
-        rt.type=avnav.map.LayerTypes.TCHART;
         //complete tile map entry here
         rt.inversy=false;
         rt.wms=false;
@@ -691,7 +693,7 @@ avnav.map.MapHolder.prototype.pixelDistance=function(point1,point2){
  * @param {number} rotation in degrees
  */
 avnav.map.MapHolder.prototype.setMapRotation=function(rotation){
-    this.getView().setRotation(rotation==0?0:(360-rotation)*Math.PI/180);
+    if (this.getView()) this.getView().setRotation(rotation==0?0:(360-rotation)*Math.PI/180);
 };
 
 /**
@@ -835,8 +837,8 @@ avnav.map.MapHolder.prototype.onPostCompose=function(evt){
     this.drawing.setRotation(evt.frameState.view2DState.rotation);
     this.drawGrid();
     this.drawNorth();
-    this.tracklayer.onPostCompose(evt.frameState.view2DState.center,this.drawing);
-    this.aislayer.onPostCompose(evt.frameState.view2DState.center,this.drawing);
+    if (this.activeFeatures[avnav.map.Features.TRACK])this.tracklayer.onPostCompose(evt.frameState.view2DState.center,this.drawing);
+    if (this.activeFeatures[avnav.map.Features.AIS])this.aislayer.onPostCompose(evt.frameState.view2DState.center,this.drawing);
     this.routinglayer.onPostCompose(evt.frameState.view2DState.center,this.drawing);
     this.navlayer.onPostCompose(evt.frameState.view2DState.center,this.drawing);
 };
@@ -910,3 +912,40 @@ avnav.map.MapHolder.prototype.getRoutingActive=function(){
     return this.routingActive;
 };
 
+/**
+ * hide a couple of features
+ * @param {Array.<avnav.map.Feature>} features
+ */
+avnav.map.MapHolder.prototype.hideFeatures=function(features){
+    var i;
+    for (i in features){
+        var e=features[i];
+        this.activeFeatures[e]=false;
+    }
+};
+
+/**
+ * show features
+ * @param {Array.<avnav.map.Feature>}features - if empty - show all
+ */
+avnav.map.MapHolder.prototype.showFeatures=function(features){
+    var i;
+    if (! features || features.length == 0){
+        for (i in avnav.map.Features){
+            this.activeFeatures[avnav.map.Features[i]]=true;
+        }
+        return;
+    }
+    for (i in features){
+        var e=features[i];
+        this.activeFeatures[e]=true;
+    }
+};
+/**
+ * check if a given feature is active
+ * @param {avnav.map.Feature} feature
+ * @returns {*}
+ */
+avnav.map.MapHolder.prototype.isFeatureActive=function(feature){
+    return this.activeFeatures[feature];
+}

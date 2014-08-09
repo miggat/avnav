@@ -102,7 +102,7 @@ avnav.map.NavLayer.prototype.setStyle=function() {
  */
 avnav.map.NavLayer.prototype.onPostCompose=function(center,drawing){
     var prop=this.mapholder.getProperties().getProperties();
-    if (prop.layers.boat) {
+    if (prop.layers.boat && this.mapholder.isFeatureActive(avnav.map.Features.BOAT)) {
         drawing.drawImageToContext(this.boatPosition, this.boatStyle.image, this.boatStyle);
         var pos = this.boatPosition;
         var other;
