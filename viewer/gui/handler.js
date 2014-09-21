@@ -43,6 +43,31 @@ avnav.gui.Handler=function(properties,navobject,map){
     this.navobject=navobject;
     /** {avnav.map.MapHolder} */
     this.map=map;
+    /**
+     * the current chart (url,charturl)
+     * @type {}
+     */
+    this.chart=undefined;
+    try {
+        var currentMap = localStorage.getItem(this.properties.getProperties().chartStorageName);
+        if (currentMap) {
+            var decoded = JSON.parse(currentMap);
+            if (decoded.url){
+                this.chart={
+                    url: decoded.url,
+                    charturl: decoded.charturl
+                };
+            }
+        }
+    }catch (e){}
+};
+
+/**
+ * get the currently active chartinfo
+ * @returns {undefined|*}
+ */
+avnav.gui.Handler.prototype.getCurrentChart=function(){
+    return this.chart;
 };
 /**
  * return to a page or show a new one if returnpage is not set
@@ -59,6 +84,7 @@ avnav.gui.Handler.prototype.showPageOrReturn=function(returnpage,page,opt_option
         opt_options.returning=true;
         spage=returnpage;
     }
+    this.storeNewChart(opt_options);
     return this.showPage(spage,opt_options);
 };
 /**
@@ -71,6 +97,7 @@ avnav.gui.Handler.prototype.showPageOrReturn=function(returnpage,page,opt_option
 avnav.gui.Handler.prototype.showPage=function(name,options){
     if (! name) return false;
     if (name == this.page) return false;
+    this.storeNewChart(options);
     $('.avn_page').hide();
     $('#avi_'+name).show();
     var oldname=this.page;
@@ -94,5 +121,29 @@ avnav.gui.Handler.prototype.isMobileBrowser=function(){
     return ( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) )||
         this.properties.getProperties().forceMobile;
     };
+
+/**
+ * check if the provided options contain a new url/charturl
+ * and store this locally and in localStorage
+ * @private
+ * @param options
+ */
+avnav.gui.Handler.prototype.storeNewChart=function(options) {
+    if (! options) return;
+    if (options.url) {
+        this.chart={
+            url:options.url,
+            charturl:options.charturl
+        };
+        try {
+            var encoded = JSON.stringify({
+                url: options.url,
+                charturl: options.charturl
+            });
+            localStorage.setItem(this.properties.getProperties().chartStorageName, encoded);
+        } catch (e) {
+        }
+    }
+}
 
 
