@@ -37,17 +37,23 @@ avnav.gui.PageEvent.EVENT_TYPE='cangepage';
  * @constructor
  */
 avnav.gui.Handler=function(properties,navobject,map){
-    /** {avnav.util.PropertyHandler} */
+    /**
+     * @type {avnav.util.PropertyHandler}
+     * */
     this.properties=properties;
-    /** {avnav.nav.NavObject} */
+    /**
+     * @type {avnav.nav.NavObject}
+     * */
     this.navobject=navobject;
-    /** {avnav.map.MapHolder} */
+    /**
+     * @type{avnav.map.MapHolder}
+     * */
     this.map=map;
     /**
      * the current chart (url,charturl)
      * @type {}
      */
-    this.chart=undefined;
+    this.chart={};
     try {
         var currentMap = localStorage.getItem(this.properties.getProperties().chartStorageName);
         if (currentMap) {
@@ -60,15 +66,20 @@ avnav.gui.Handler=function(properties,navobject,map){
             }
         }
     }catch (e){}
+    /**
+     * keep the data of the last chart we have shown
+     * @private
+     * @type {undefined}
+     */
+    this.lastChownChart={};
+    /**
+     * @private
+     * @type {avnav.util.Formatter}
+     */
+    this.formatter=new avnav.util.Formatter();
 };
 
-/**
- * get the currently active chartinfo
- * @returns {undefined|*}
- */
-avnav.gui.Handler.prototype.getCurrentChart=function(){
-    return this.chart;
-};
+
 /**
  * return to a page or show a new one if returnpage is not set
  * set the returning flag in options if we return
@@ -144,6 +155,187 @@ avnav.gui.Handler.prototype.storeNewChart=function(options) {
         } catch (e) {
         }
     }
-}
+};
+/**
+ * check if the new chart url is the same like the last chown
+ * @private
+ * @returns {boolean}
+ */
+avnav.gui.Handler.prototype.chartChanged=function(){
+    if (this.lastChownChart.url == this.chart.url &&
+        this.lastChownChart.charturl == this.chart.charturl) return false;
+    return true;
+};
+/**
+ * check if a chart is set
+ * @returns {boolean}
+ */
+avnav.gui.Handler.prototype.hasChart=function(){
+    if (this.chart && this.chart.url) return true;
+    return false;
+};
+
+
+/**
+ * show the map handling the charturl options
+ */
+avnav.gui.Handler.prototype.showMap=function(mapdom){
+    if (!this.chartChanged() && this.lastChownChart.mapdom == mapdom) return false;
+    if (! this.chart ||  ! this.chart.url){
+        alert("invalid page call - no chart selected");
+        return true;
+    }
+    var brightness=1;
+    if (this.properties.getProperties().style.nightMode < 100) {
+        brightness=this.properties.getProperties().nightChartFade/100;
+    }
+    if (this.chartChanged()) {
+        //chartbase: optional url for charts
+        //list: the base url
+        var chartbase = this.chart.charturl;
+        var list = this.chart.url;
+        if (!chartbase) {
+            chartbase = list;
+        }
+        if (!list.match(/^http:/)) {
+            if (list.match(/^\//)) {
+                list = window.location.href.replace(/^([^\/:]*:\/\/[^\/]*).*/, '$1') + list;
+            }
+            else {
+                list = window.location.href.replace(/[?].*/, '').replace(/[^\/]*$/, '') + "/" + list;
+            }
+        }
+        var url = list + "/avnav.xml";
+        var self = this;
+        $.ajax({
+            url: url,
+            dataType: 'xml',
+            cache: false,
+            success: function (data) {
+                self.map.initMap(mapdom, data, chartbase);
+                self.map.setBrightness(brightness);
+                self.lastChownChart.url = self.chart.url;
+                self.lastChownChart.charturl = self.chart.charturl;
+                self.lastChownChart.mapdom=mapdom;
+            },
+            error: function (ev) {
+                alert("unable to load charts " + ev.responseText);
+            }
+        });
+    }
+    else {
+        self.map.setBrightness(brightness);
+        if (mapdom != this.lastChownChart.mapdom) {
+            self.map.setDom(mapdom);
+            this.lastChownChart.mapdom = mapdom;
+        }
+    }
+    return true;
+
+};
+
+/**
+ * create/upadte a list of route points
+ * @param {avnav.nav.Route} route
+ * @param {number} active - the id of the active WP
+ * @param {string} domId - the domId of the list (jQuery)
+ * @param {boolean} opt_force
+ * @returns {boolean} true if rebuild
+ */
+avnav.gui.Handler.prototype.updateRoutePoints=function(route,active,domId,opt_force){
+    var html="";
+    var i;
+    var self=this;
+    var curlen=$(domId).find('.avn_route_info_point').length;
+    var rebuild=opt_force||false;
+    if (curlen != route.points.length || rebuild){
+        //rebuild
+        for (i=0;i<route.points.length;i++){
+            html+='<div class="avn_route_info_point ';
+            html+='">';
+            html+='<input type="text" id="avi_route_point_'+i+'"/>';
+            if (this.properties.getProperties().routeShowLL) {
+                html += '<span class="avn_route_point_ll">';
+            }
+            else{
+                html += '<span class="avn_route_point_course">';
+            }
+            html+='</span>';
+            html+='</div>';
+        }
+        $(domId).html(html);
+        rebuild=true;
+    }
+    else {
+        //update
+    }
+    $(domId).find('.avn_route_info_point').each(function(i,el){
+        var txt=route.points[i].name?route.points[i].name:i+"";
+        if (i == active) {
+            $(el).addClass('avn_route_info_active_point');
+            if (rebuild){
+                el.scrollIntoView();
+            }
+            else {
+                //ensure element is visible
+                var eltop = $(el).position().top;
+                var ph = $('#avi_route_info_list').height();
+                var eh = $(el).height();
+                if (eltop < 0)el.scrollIntoView(true);
+                if ((eltop + eh) > (ph)) el.scrollIntoView(false);
+            }
+        }
+        else $(el).removeClass('avn_route_info_active_point');
+        $(el).find('input').val(txt);
+        $(el).find('.avn_route_point_ll').html(self.formatter.formatLonLats(route.points[i]));
+        var courseLen="--- &#176;<br>---- nm";
+        if (i>0) {
+            var dst=avnav.nav.NavCompute.computeDistance(route.points[i-1],route.points[i]);
+            courseLen=self.formatter.formatDecimal(dst.course,3,0)+" &#176;<br>";
+            courseLen+=self.formatter.formatDecimal(dst.dtsnm,3,1)+" nm";
+        }
+        $(el).find('.avn_route_point_course').html(courseLen);
+        var idx=i;
+        if (rebuild) {
+            $(el).attr('avn_idx',idx);
+            if (self.isMobileBrowser()){
+                $(el).find('input').attr('readonly','true');
+            }
+        }
+    });
+    return rebuild;
+};
+/**
+ * update a waypoint popup
+ * @param {} domId
+ * @param {number} idx
+ * @param {avnav.nav.navdata.WayPoint} currWp - the current active WP
+ * @param {avnav.nav.navdata.WayPoint} prevWp - the previous WP (if any)
+ */
+avnav.gui.Handler.prototype.updateWpPopUp=function(domId,idx,currWp,prevWp){
+    $(domId).attr('wpid',idx);
+    if (currWp){
+        var txt=currWp.name||idx+"";
+        $(domId).find('input').val(txt);
+        $(domId).find('.avn_route_point_ll').text(this.formatter.formatLonLats(currWp));
+        if (prevWp){
+            var dst=avnav.nav.NavCompute.computeDistance(prevWp,currWp);
+            var courseLen=this.formatter.formatDecimal(dst.course,3,0)+" °, ";
+            courseLen+=this.formatter.formatDecimal(dst.dtsnm,3,1)+" nm";
+            $(domId).find('.avn_route_point_course').html(courseLen);
+        }
+        else{
+            $(domId).find('.avn_route_point_course').html("");
+        }
+    }
+    else{
+        $(domId).find('input').val("");
+        $(domId).find('.avn_route_point_ll').text('');
+        $(domId).find('.avn_route_point_course').html("");
+    }
+};
+
+
+
 
 

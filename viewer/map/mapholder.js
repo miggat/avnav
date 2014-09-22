@@ -225,6 +225,7 @@ avnav.map.MapHolder.prototype.initMap=function(div,layerdata,baseurl){
         for (var i=0;i< layersreverse.length;i++){
             this.olmap.addLayer(layersreverse[i]);
         }
+        this.setDom(div);
     }
     else {
         this.olmap = new ol.Map({
@@ -925,8 +926,22 @@ avnav.map.MapHolder.prototype.getRoutingActive=function(){
     return this.routingActive;
 };
 
+/**
+ * set the map brightness
+ * @param brightness
+ */
 avnav.map.MapHolder.prototype.setBrightness=function(brightness){
     this.opacity=brightness;
+};
+
+/**
+ * set the map dom
+ * @param dom
+ */
+avnav.map.MapHolder.prototype.setDom=function(dom){
+    if (! this.olmap) return;
+    this.olmap.setTarget(dom);
+    this.updateSize();
 };
 
 
