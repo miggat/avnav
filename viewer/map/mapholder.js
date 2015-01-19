@@ -146,6 +146,7 @@ avnav.map.MapHolder=function(properties,navobject){
      */
     this.lastOpacity=-1;
     var self=this;
+    this.ongoingTouches=[]
     $(document).on(avnav.nav.NavEvent.EVENT_TYPE, function(ev,evdata){
         self.navEvent(evdata);
     });
@@ -288,6 +289,7 @@ avnav.map.MapHolder.prototype.initMap=function(div,layerdata,baseurl){
     var newCenter= this.pointFromMap(this.getView().getCenter());
     this.setCenterFromMove(newCenter,true);
     if (! this.getProperties().getProperties().layers.boat ) this.gpsLocked=false;
+    this.createTouchOverlay();
 };
 
 /**
@@ -930,4 +932,128 @@ avnav.map.MapHolder.prototype.setBrightness=function(brightness){
     this.opacity=brightness;
 };
 
+avnav.map.MapHolder.prototype.ongoingTouchIndexById=function(idToFind) {
+    for (var i=0; i < this.ongoingTouches.length; i++) {
+        var id = this.ongoingTouches[i].identifier;
+        if (id == idToFind) {
+            return i;
+        }
+    }
+    return -1;    // not found
+};
+/**
+ * convienience function for touch
+ * @param touch
+ * @returns {{identifier: (*|Plugin.identifier), pageX: (*|Number|pageX), pageY: (*|Number|pageY)}}
+ */
+avnav.map.MapHolder.prototype.copyTouch=function(touch){
+    return {
+        identifier: touch.identifier,
+        pageX: touch.pageX,
+        pageY: touch.pageY
+    };
+};
+
+avnav.map.MapHolder.prototype.touchMove=function(newTouch,startTouch){
+    var dpixel=[startTouch.pageX-newTouch.pageX,
+        startTouch.pageY-newTouch.pageY];
+    var self=this;
+    log("move diff "+dpixel[0]+","+dpixel[1]);
+    setTimeout(function(){
+        var pixel=self.coordToPixel(self.getView().getCenter());
+        pixel[0]+=dpixel[0];
+        pixel[1]+=dpixel[1];
+        var newCoord=self.pixelToCoord(pixel);
+        self.getView().setCenter(newCoord);
+    },5);
+};
+/**
+ * event handler to work around the problem of too long event handling for
+ * old (<4.4) android browsers
+ * to the touch handling here and trigger the move always in a timer
+ * @param {Event} e
+ * @returns {boolean}
+ */
+avnav.map.MapHolder.prototype.touchHandler=function(e){
+    log(e.type+" at overlay");
+    var target= $(e.target);
+    if (target.is('#catch_event')) return true;
+    if ($('#catch_event').is(':checked')){
+        if (e.type == "touchstart"){
+            var touches= e.originalEvent.changedTouches;
+            for (var i=0; i < touches.length; i++) {
+                log("touchstart:"+i+"...");
+                this.ongoingTouches.push(this.copyTouch(touches[i]));
+            }
+        }
+        if (e.type == "touchmove"){
+            var touches = e.originalEvent.changedTouches;
+            for (var i=0; i < touches.length; i++) {
+                log("touch "+i+": "+touches[i].pageX+","+touches[i].pageY);
+                var idx = this.ongoingTouchIndexById(touches[i].identifier);
+                if(idx >= 0) {
+                    if (i==0){
+                        this.touchMove(touches[i],this.ongoingTouches[idx]);
+                    }
+                    log("continuing touch "+idx);
+                    this.ongoingTouches.splice(idx, 1, this.copyTouch(touches[i]));  // swap in the new touch record
+                    log(".");
+                } else {
+                    log("can't figure out which touch to continue");
+                }
+            }
+        }
+        if (e.type=="touchend"){
+            var touches = e.originalEvent.changedTouches;
+            for (var i=0; i < touches.length; i++) {
+                var idx = this.ongoingTouchIndexById(touches[i].identifier);
+                if(idx >= 0) {
+                    /*
+                    if (i==0){
+                        this.touchMove(touches[i],this.ongoingTouches[idx]);
+                    }*/
+                    log("touchend for "+idx);
+                    this.ongoingTouches.splice(idx, 1);  // remove it; we're done
+                } else {
+                    log("can't figure out which touch to end");
+                }
+            }
+        }
+        if (e.type=="touchcancel"){
+            var touches = e.originalEvent.changedTouches;
+            for (var i=0; i < touches.length; i++) {
+                var idx = this.ongoingTouchIndexById(touches[i].identifier);
+                if(idx >= 0) {
+                    log("touchcancel for "+idx);
+                    this.ongoingTouches.splice(idx, 1);  // remove it; we're done
+                } else {
+                    log("can't figure out which touch to cancel");
+                }
+            }
+        }
+        e.stopPropagation();
+        e.preventDefault();
+        return false;
+    }
+    return true;
+};
+/**
+ * create an overlay to catch touch events
+ */
+avnav.map.MapHolder.prototype.createTouchOverlay=function(){
+    if (!window.location.href.match(/[?&]touchoverlay=/)) return;
+    var map=$('.ol-unselectable');
+    var id="avi_touch";
+    var self=this;
+    map.parent().prepend('<div id="'+id+'"><H1>Map Overlay!</H1><form>Catch:<input type="checkbox" id="catch_event"></input></form></div>');
+    $("#"+id).bind("blur focus focusin focusout load resize scroll unload click " +
+    "dblclick mousedown mouseup mousemove mouseover mouseout mouseenter " +
+    "mouseleave change select submit keydown keypress keyup error", function(e){ return self.touchHandler(e)});
+    $('#'+id).on('touchstart',function(e){return self.touchHandler(e)});
+    $('#'+id).on('touchend',function(e){return self.touchHandler(e)});
+    $('#'+id).on('touchmove',function(e){return self.touchHandler(e)});
+    $('#'+id).on('touchcancel',function(e){return self.touchHandler(e)});
+    $('#'+id).on('touchleave',function(e){return self.touchHandler(e)});
+
+};
 
