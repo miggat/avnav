@@ -25,12 +25,15 @@
 #  parts from this software (AIS decoding) are taken from the gpsd project
 #  so refer to this BSD licencse also (see ais.py) or omit ais.py 
 ###############################################################################
+# 2015-12-19: Added barometer and barograph functionality. Berthold Daum (bd)
 import sys
 import datetime
 import traceback
 import pprint
 from avnav_util import *
 from avnav_data import *
+from ais import AISUnpackingException
+
 hasAisDecoder=False
 try:
   import ais
@@ -69,6 +72,17 @@ class NMEAParser():
     de=AVNDataEntry.fromData(data)
     self.navdata.addEntry(de)
     
+  def addEnvData(self,data,timedate):
+    if timedate is not None:
+      t=timedate.isoformat()
+      #seems that isoformat does not well harmonize with OpenLayers.Date
+      #they expect at leas a timezone info
+      #as we are at GMT we should have a "Z" at the end
+      if not t[-1:]=="Z":
+        t+="Z"
+      data['time']=t
+    self.navdata.addEnvData(data)
+
   #returns an datetime object containing the current gps time
   @classmethod
   def gpsTimeToTime(cls,gpstime,gpsdate=None):
@@ -188,7 +202,50 @@ class NMEAParser():
         return False
       AVNLog.debug("parse AIS data %s",data)
       return self.ais_packet_scanner(data)
-      
+     # start bd
+    tag=darray[0][1:]
+    if tag== 'WXIDR':
+      rt={'class':'TPV','tag': 'PXDR'}
+      pressure = False
+      temp = False
+      for t in darray:
+        if pressure:
+          pressure = False
+          rt['hPa'] = float(t)*1000
+          continue
+        if temp:
+          temp = False
+          rt['temp'] = t
+        if t=='P':
+          pressure = True
+          continue
+        if t=='C':
+          temp = True
+          continue
+      self.addEnvData(rt, None)
+      return True
+    if tag== 'NVMMB':
+      if len(darray) >= 4:
+        rt={'class':'TPV','tag': 'PXDR', 'hPa': float(darray[3])*1000}
+        self.addEnvData(rt, None)
+        return True
+      AVNLog.debug("invalid nmea data (len<4) "+data+" - ignore")
+      return False
+    if tag== 'WIMMB':
+      if len(darray) >= 4:
+        rt={'class':'TPV','tag': 'PXDR', 'hPa': float(darray[3])*1000}
+        self.addEnvData(rt, None)
+        return True
+      AVNLog.debug("invalid nmea data (len<4) "+data+" - ignore")
+      return False
+    if tag== 'PXDR':
+      if len(darray) >= 6:
+        rt={'class':'TPV','tag': 'PXDR', 'hPa': darray[1], 'raw': darray[2], 'd1h': darray[3], 'd3h': darray[4], 'rawd1m': darray[5]}
+        self.addEnvData(rt, None)
+        return True
+      AVNLog.debug("invalid nmea data (len<6) "+data+" - ignore")
+      return False
+    # end bd
     tag=darray[0][3:]
     rt={'class':'TPV','tag':tag}
     #currently we only take the time from RMC

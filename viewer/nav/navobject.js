@@ -14,7 +14,9 @@ avnav.nav.NavEventType={
     AIS:1,
     TRACK:2,
     NAV:3,
-    ROUTE: 4
+    ROUTE: 4,
+    BARO: 5,   // bd
+    BAROGRAPH: 6   // bd
 };
 
 /**
@@ -139,7 +141,13 @@ avnav.nav.NavObject=function(propertyHandler){
         edRouteLen: 0,
         /* the next 2 will only be filled when the editing route is the current */
         edRouteRemain: 0,
-        edRouteEta:0
+        edRouteEta: 0,
+        baroHPa: 0, // bd
+        baro1h: 0,
+        baro3h: 0,
+        baroHist: {},
+        baroScope: 3,
+        baroMagnified: false
     };
     this.formattedValues={
         markerEta:"--:--:--",
@@ -162,7 +170,10 @@ avnav.nav.NavObject=function(propertyHandler){
         edRouteNumPoints: "--",
         edRouteLen: "--",
         edRouteRemain: "--",
-        edRouteEta: "--:--:--"
+        edRouteEta: "--:--:--",
+        baroHPa: "--",  // bd
+        baro1h: "--",
+        baro3h: "--"
     };
     for (var k in this.formattedValues){
         this.registerValueProvider(k,this,this.getFormattedNavValue);
@@ -322,6 +333,12 @@ avnav.nav.NavObject.prototype.computeValues=function(){
     this.formattedValues.edRouteRemain=this.formatter.formatDecimal(this.data.edRouteRemain,4,1);
     this.formattedValues.edRouteEta=this.data.edRouteEta?this.formatter.formatTime(this.data.edRouteEta):"--:--:--";
 };
+avnav.nav.NavObject.prototype.computeEnvValues = function() {  // bd
+    var baro = this.barodata.getBaroData();
+    this.formattedValues.baroHPa = (baro.hPa !== undefined && baro.hPa != 0) ? this.formatter.formatDecimal(baro.hPa, 1, 1) : "--";
+    this.formattedValues.baro1h = (baro.d1h !== undefined && baro.d1h != 0) ? this.formatter.formatDecimal(baro.d1h, 1, 2) : "--";
+    this.formattedValues.baro3h = (baro.d3h !== undefined && baro.d3h != 0) ? this.formatter.formatDecimal(baro.d3h, 1, 2) : "--"
+};
 
 /**
  * get the current map center (lon/lat)
@@ -372,6 +389,9 @@ avnav.nav.NavObject.prototype.getRawData=function(type){
     if (type == avnav.nav.NavEventType.TRACK) return this.trackHandler.getTrackData();
     if (type == avnav.nav.NavEventType.AIS) return this.aisHandler.getAisData();
     if (type == avnav.nav.NavEventType.ROUTE) return this.routeHandler.getRouteData();
+    if (type == avnav.nav.NavEventType.BARO) {  // bd
+        return this.barodata.getBaroData()
+    }
     return undefined;
 };
 /**
@@ -451,6 +471,329 @@ avnav.nav.NavObject.prototype.routeEvent=function(){
     ));
     this.triggerUpdateEvent(avnav.nav.NavEventSource.NAV);
 };
+
+avnav.nav.NavObject.prototype.baroEvent = function() { //bd
+    this.computeEnvValues();
+    $(document).trigger(avnav.nav.NavEvent.EVENT_TYPE, new avnav.nav.NavEvent(avnav.nav.NavEventType.BARO, this.getValueNames(), avnav.nav.NavEventSource.NAV, this))
+};
+avnav.nav.NavObject.prototype.barographEvent = function(data) { //bd
+
+    var dim = this.propertyHandler.getValueByName("style.nightMode");
+    if (dim != 100) {
+        // night theme
+        Highcharts.createElement('link', {
+            href: '//fonts.googleapis.com/css?family=Unica+One',
+            rel: 'stylesheet',
+            type: 'text/css'
+        }, null, document.getElementsByTagName('head')[0]);
+
+        Highcharts.theme = {
+            colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee",
+                "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
+            chart: {
+                backgroundColor: {
+                    linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },
+                    stops: [
+                        [0, '#2a2a2b'],
+                        [1, '#3e3e40']
+                    ]
+                },
+                style: {
+                    fontFamily: "'Unica One', sans-serif"
+                },
+                plotBorderColor: '#606063'
+            },
+            title: {
+                style: {
+                    color: '#E0E0E3',
+                    textTransform: 'uppercase',
+                    fontSize: '20px'
+                }
+            },
+            subtitle: {
+                style: {
+                    color: '#E0E0E3',
+                    textTransform: 'uppercase'
+                }
+            },
+            xAxis: {
+                gridLineColor: '#707073',
+                labels: {
+                    style: {
+                        color: '#E0E0E3'
+                    }
+                },
+                lineColor: '#707073',
+                minorGridLineColor: '#505053',
+                tickColor: '#707073',
+                title: {
+                    style: {
+                        color: '#A0A0A3'
+
+                    }
+                }
+            },
+            yAxis: {
+                gridLineColor: '#707073',
+                labels: {
+                    style: {
+                        color: '#E0E0E3'
+                    }
+                },
+                lineColor: '#707073',
+                minorGridLineColor: '#505053',
+                tickColor: '#707073',
+                tickWidth: 1,
+                title: {
+                    style: {
+                        color: '#A0A0A3'
+                    }
+                },
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                style: {
+                    color: '#F0F0F0'
+                }
+            },
+            plotOptions: {
+                series: {
+                    dataLabels: {
+                        color: '#B0B0B3'
+                    },
+                    marker: {
+                        lineColor: '#333'
+                    }
+                },
+                boxplot: {
+                    fillColor: '#505053'
+                },
+                candlestick: {
+                    lineColor: 'white'
+                },
+                errorbar: {
+                    color: 'white'
+                }
+            },
+            legend: {
+                itemStyle: {
+                    color: '#E0E0E3'
+                },
+                itemHoverStyle: {
+                    color: '#FFF'
+                },
+                itemHiddenStyle: {
+                    color: '#606063'
+                }
+            },
+            credits: {
+                style: {
+                    color: '#666'
+                }
+            },
+            labels: {
+                style: {
+                    color: '#707073'
+                }
+            },
+
+            drilldown: {
+                activeAxisLabelStyle: {
+                    color: '#F0F0F3'
+                },
+                activeDataLabelStyle: {
+                    color: '#F0F0F3'
+                }
+            },
+
+            navigation: {
+                buttonOptions: {
+                    symbolStroke: '#DDDDDD',
+                    theme: {
+                        fill: '#505053'
+                    }
+                }
+            },
+
+            // scroll charts
+            rangeSelector: {
+                buttonTheme: {
+                    fill: '#505053',
+                    stroke: '#000000',
+                    style: {
+                        color: '#CCC'
+                    },
+                    states: {
+                        hover: {
+                            fill: '#707073',
+                            stroke: '#000000',
+                            style: {
+                                color: 'white'
+                            }
+                        },
+                        select: {
+                            fill: '#000003',
+                            stroke: '#000000',
+                            style: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                },
+                inputBoxBorderColor: '#505053',
+                inputStyle: {
+                    backgroundColor: '#333',
+                    color: 'silver'
+                },
+                labelStyle: {
+                    color: 'silver'
+                }
+            },
+
+            navigator: {
+                handles: {
+                    backgroundColor: '#666',
+                    borderColor: '#AAA'
+                },
+                outlineColor: '#CCC',
+                maskFill: 'rgba(255,255,255,0.1)',
+                series: {
+                    color: '#7798BF',
+                    lineColor: '#A6C7ED'
+                },
+                xAxis: {
+                    gridLineColor: '#505053'
+                }
+            },
+
+            scrollbar: {
+                barBackgroundColor: '#808083',
+                barBorderColor: '#808083',
+                buttonArrowColor: '#CCC',
+                buttonBackgroundColor: '#606063',
+                buttonBorderColor: '#606063',
+                rifleColor: '#FFF',
+                trackBackgroundColor: '#404043',
+                trackBorderColor: '#404043'
+            },
+
+            // special colors for some of the
+            legendBackgroundColor: 'rgba(0, 0, 0, 0.5)',
+            background2: '#505053',
+            dataLabelsColor: '#B0B0B3',
+            textColor: '#C0C0C0',
+            contrastTextColor: '#F0F0F3',
+            maskColor: 'rgba(255,255,255,0.3)'
+        };
+
+        // Apply the theme
+        Highcharts.setOptions(Highcharts.theme);
+    } else {
+        var defaultOptions = Highcharts.getOptions();
+        for (var prop in defaultOptions) {
+            if (typeof defaultOptions[prop] != 'function') delete defaultOptions[prop];
+        }
+        Highcharts.setOptions(HCDefaults);
+    }
+    var ontick = false;
+    var min = 900;
+    var max = 1080;
+    if (this.data.baroMagnified) {
+        min = 1080;
+        max = 900;
+        ontick = true;
+        var hist = this.barodata.barographdata.hist;
+        var i = hist.length
+        while (i--) {
+            if (hist[i] > max) max = hist[i];
+            if (hist[i] < min) min = hist[i];
+        }
+    }
+    $('#avi_baro_page_container').highcharts({
+        chart: {
+            zoomType: 'x'
+        },
+        title: {
+            text: 'Barometric pressure in hectoPascal'
+        },
+        subtitle: {
+            text: document.ontouchstart === undefined ?
+                'Click and drag in the plot area to zoom in' : 'Pinch the chart to zoom in'
+        },
+        xAxis: {
+            type: 'datetime',
+            tickPixelInterval: 36,
+            gridLineWidth: 0.2,
+            gridLineColor: '#197F07'
+        },
+        yAxis: {
+            title: {
+                text: 'Pressure'
+            },
+            min: min,
+            max: max,
+            startOnTick: ontick,
+            endOnTick: ontick,
+            tickPixelInterval: 36,
+            gridLineWidth: 0.2,
+            gridLineColor: '#197F07'
+        },
+        legend: {
+            enabled: false
+        },
+        credits: {
+            enabled: false
+        },
+        plotOptions: {
+            area: {
+                fillColor: {
+                    linearGradient: {
+                        x1: 0,
+                        y1: 0,
+                        x2: 0,
+                        y2: 1
+                    },
+                    stops: [
+                        [0, Highcharts.getOptions().colors[0]],
+                        [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
+                    ]
+                },
+                marker: {
+                    radius: 2
+                },
+                lineWidth: 1,
+                states: {
+                    hover: {
+                        lineWidth: 1
+                    }
+                },
+                threshold: null
+            }
+        },
+
+        series: [{
+            type: 'area',
+            name: 'Pressure',
+            data: data
+        }],
+        tooltip: {
+            headerFormat: '<span style="font-size: 12px;">{point.key}</span><br/>',
+            dateTimeLabelFormats: {
+                millisecond: '%a, %H:%M',
+                second: '%a, %H:%M',
+                minute: '%a, %H:%M',
+                hour: '%a, %H:%M',
+                day: '%a, %e. %b',
+                week: '%e. %b',
+                month: '%b /%y',
+                month: '%y'
+            },
+            valueDecimals: 2,
+            valueSuffix: ' hPa'
+        }
+    });
+};
+
 /**
  * register the provider of a display value
  * @param {string} name

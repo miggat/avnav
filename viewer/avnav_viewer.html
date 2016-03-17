@@ -26,6 +26,7 @@
 #  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 #  DEALINGS IN THE SOFTWARE.
 ###############################################################################
+# 2015-12-19: Added barometer and barograph functionality. Berthold Daum (bd)
 
 Value displays:
 all classes avd_ correspond to some data that will be displayed
@@ -116,6 +117,7 @@ all buttons with ids avb_... will call corresponding js functions
           <button id="avb_ShowDownload" type="button"  class="avn_button"></button>
           <button id="avb_Connected" type="button"  class="avn_button avn_toggleButton"></button>
           <button id="avb_ShowGps" type="button"  class="avn_button">000</button>
+          <button id="avb_ShowBaro" type="button"  class="avn_button"></button>  <!-- bd -->
           <button id="avb_Night" type="button"  class="avn_button avn_toggleButton"></button>
           <!--<button id="avb_MainAndroid" type="button"  class="avn_button avn_android avn_hidden"></button>-->
           <button id="avb_MainCancel" type="button"  class="avn_button avn_android avn_hidden"></button>
@@ -274,7 +276,7 @@ all buttons with ids avb_... will call corresponding js functions
                           <div class='avn_gpsp_field_label'>AIS</div>
                           <div id="avi_gpsp_aisframe" class="avn_gpsp_value" avnrel="22">
                               <div id="avi_gpsp_ais_status"></div>
-                              <div id='avi_gpsp_ais' ></div>    <span id="avi_aisStatusText">
+                              <div id='avi_gpsp_ais' ></div>    <span id="avi_aisStatusText"></span>
                           </div>
                       </div>
 
@@ -288,6 +290,55 @@ all buttons with ids avb_... will call corresponding js functions
       </div>
   </div>
   <!-- end gpsPage-->
+
+  <!-- baroPage // bd -->
+  <div id="avi_baropage" class="avn_page avn_hidden">
+      <div id="avi_baro_page_left" class='avn_panel avn_left_panel'>
+          <div class='avn_panel avn_graph'>
+             <div id="avi_baro_page_container">
+          </div>
+          </div>
+
+          <div id='avi_baro_page_text' class="avn_panel avn_left_bottom">
+              <div id="avi_baro_page_text_left" class="avn_baro_hfield" >
+              	   <div class='avn_baro_vfield' avnfs="28">
+              		   <div class='avn_baro_field_label'>Pressure</div>
+                     <div>
+                       <span class='avd_baroHPa avn_baro_value' avnrel="8"></span>
+                       <span class='avn_baro_unit avn_gpsp_cunit'>hPa</span>
+                     </div>
+                  </div>
+              </div>
+              <div id="avi_baro_page_text_middle" class="avn_baro_hfield">
+                  <div class='avn_baro_vfield' avnfs="28">
+              		    <div class='avn_baro_field_label'>Change over last hour</div>
+                      <div>
+                        <span class='avd_baro1h avn_baro_value' avnrel="8"></span>
+                        <span class='avn_baro_unit avn_gpsp_cunit'>hPa</span>
+                      </div>
+                  </div>
+               </div>
+              <div id="avi_baro_page_text_right" class="avn_baro_hfield">
+                  <div class='avn_baro_vfield' avnfs="28">
+                 		<div class='avn_baro_field_label'>... last three hours</div>
+                     <div>
+                       <span class='avd_baro3h avn_baro_value' avnrel="8"></span>
+                       <span class='avn_baro_unit avn_gpsp_cunit'>hPa</span>
+                    </div>
+                  </div>
+              </div>
+          </div>
+
+      </div>
+      <div class='avn_panel avn_right_panel'>
+	  		<button id="avb_BaroZoomIn" type="button" class="avn_button"></button>
+        <button id="avb_BaroZoomOut" type="button" class="avn_button"></button>
+        <button id="avb_BaroMagnify" type="button" class="avn_button avn_toggleButton"></button>
+        <button id="avb_BaroCancel" type="button" class="avn_button"></button>
+      </div>
+  </div>
+  <!-- end baroPage-->
+
   <!-- navPage -->
   <div id="avi_navpage" class="avn_page avn_hidden">
       <div class='avn_panel avn_left_panel'>
@@ -617,8 +668,16 @@ all buttons with ids avb_... will call corresponding js functions
                       <div class="avn_setting" avn_name="aisQueryTimeout"></div>
                       <div class="avn_clear"></div>
                   </div>
-              </div>
-              <div class="avn_settings_group">
+                  <div class="avn_settings_line"> <!-- bd -->
+                      <div class="avn_setting" avn_name="baroQueryTimeout"></div>
+                      <div class="avn_clear"></div>
+                  </div>
+                 <div class="avn_settings_line"> <!-- bd -->
+                      <div class="avn_setting" avn_name="barographQueryTimeout"></div>
+                      <div class="avn_clear"></div>
+                  </div>
+               </div>
+               <div class="avn_settings_group">
                   <h2 class="avn_settings_headline">Layout</h2>
                   <div class="avn_settings_line">
                       <div class="avn_setting" avn_name="style.bottomPanelHeight"></div>
@@ -690,25 +749,7 @@ all buttons with ids avb_... will call corresponding js functions
                   <div class="avn_settings_line">
                       <div class="avn_setting" avn_name="bearingColor"></div>
                       <div class="avn_clear"></div>
-                  </div>.avn_toast{
-    width:50em;
-    height:2em;
-    height:auto;
-    position:absolute;
-    left:50%;
-    margin-left:-100px;
-    bottom:10px;
-    background-color: #383838;
-    color: #F0F0F0;
-    .nightColors();
-    font-size: 1.5em;
-    padding:1em;
-    text-align:center;
-    border-radius: 2px;
-    -webkit-box-shadow: 0px 0px 24px -1px rgba(56, 56, 56, 1);
-    -moz-box-shadow: 0px 0px 24px -1px rgba(56, 56, 56, 1);
-    box-shadow: 0px 0px 24px -1px rgba(56, 56, 56, 1);
-}
+                  </div>
                   <div class="avn_settings_line">
                       <div class="avn_setting" avn_name="bearingWidth"></div>
                       <div class="avn_clear"></div>

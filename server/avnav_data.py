@@ -25,6 +25,7 @@
 #  parts from this software (AIS decoding) are taken from the gpsd project
 #  so refer to this BSD licencse also (see ais.py) or omit ais.py 
 ###############################################################################
+# 2015-12-19: Added barometer and barograph functionality. Berthold Daum (bd)
 __author__="Andreas"
 __date__ ="$29.06.2014 21:23:34$"
 
@@ -33,6 +34,7 @@ import threading
 import pprint
 import time
 import traceback
+from array import *
 from avnav_util import *
 
 #a data entry
@@ -120,6 +122,117 @@ class AVNDataEntry():
   def toJson(self):
     return json.dumps(self.data)
   
+#a environment data entry //bd
+#data is the decoded string
+class AVNEnvEntry():
+  EMPTY_CLASS="EMPTY"
+  def __init__(self):
+    self.key=self.createKey(self.EMPTY_CLASS,'')
+    self.data={'class':self.EMPTY_CLASS,'time':None}
+    self.timestamp=None
+
+  #create a key from prefix and suffix
+  @classmethod
+  def createKey(cls,prefix,suffix):
+    return prefix+"-"+suffix
+
+  #create from the json decoded data
+  #data must contain a class member and for TPV a type member
+  @classmethod
+  def fromData(cls,data):
+    dcls=data.get('class');
+    if dcls is None:
+      AVNLog.debug("data %s does not contain a class - ignore",unicode(data))
+      return None
+    if dcls == 'TPV':
+      tag=data.get('tag')
+      if tag is None:
+        AVNLog.debug("no tag for TPV in %s - ignore",unicode(data))
+        return None
+      rt=AVNEnvEntry()
+      rt.key=cls.createKey(dcls, tag)
+      rt.data=data
+      AVNLog.ld("environment data item created",rt)
+      return rt
+
+    #we should not arrive here...
+    AVNLog.debug("unknown class in %s - ignore",unicode(data))
+    return None
+
+
+  #decode from json
+  @classmethod
+  def fromJson(cls,jsondata):
+    data=None
+    try:
+      data=json.loads(jsondata)
+    except:
+      AVNLog.debug("unable to parse json data %s : %s",jsondata,traceback.format_exc())
+      return None
+    return cls.fromData(data)
+
+  def __unicode__(self):
+    rt="AVNEnvEntry: %s(ts=%f)=%s" % (self.key,(self.timestamp if self.timestamp is not None else 0),pprint.pformat(self.data))
+    return rt
+  def toJson(self):
+    return json.dumps(self.data)
+
+#a graph data entry //bd
+#data is the decoded string
+class AVNGraphEntry():
+  EMPTY_CLASS="EMPTY"
+  def __init__(self):
+    self.key=self.createKey(self.EMPTY_CLASS,'')
+    self.data={'class':self.EMPTY_CLASS,'time':None}
+    self.timestamp=None
+
+  #create a key from prefix and suffix
+  @classmethod
+  def createKey(cls,prefix,suffix):
+    return prefix+"-"+suffix
+
+  #create from the json decoded data
+  #data must contain a class member and for TPV a type member
+  @classmethod
+  def fromData(cls,data):
+    dcls=data.get('class');
+    if dcls is None:
+      AVNLog.debug("data %s does not contain a class - ignore",unicode(data))
+      return None
+    if dcls == 'TPV':
+      tag=data.get('tag')
+      if tag is None:
+        AVNLog.debug("no tag for TPV in %s - ignore",unicode(data))
+        return None
+      rt=AVNGraphEntry()
+      rt.key=cls.createKey(dcls, tag)
+      rt.data=data
+      AVNLog.ld("graph item created",rt)
+      return rt
+
+    #we should not arrive here...
+    AVNLog.debug("unknown class in %s - ignore",unicode(data))
+    return None
+
+
+  #decode from json
+  @classmethod
+  def fromJson(cls,jsondata):
+    data=None
+    try:
+      data=json.loads(jsondata)
+    except:
+      AVNLog.debug("unable to parse json data %s : %s",jsondata,traceback.format_exc())
+      return None
+    return cls.fromData(data)
+
+  def __unicode__(self):
+    rt="AVNGraphEntry: %s(ts=%f)=%s" % (self.key,(self.timestamp if self.timestamp is not None else 0),pprint.pformat(self.data))
+    return rt
+  def toJson(self):
+    return json.dumps(self.data)
+
+
 
 #the main List of navigational items received
 class AVNNavData():
@@ -133,7 +246,15 @@ class AVNNavData():
     self.ownMMSI=ownMMSI
     self.prefixCounter={} #contains the number of entries for TPV, AIS,...
     self.lastSources={} #contains the last source for each class
-
+    self.envEntry = None #bd
+    self.graphEntry = None #bd
+    self.hist=array('f') #bd
+    self.histInterval = 300000 # in msecs // bd
+    self.histDuration = 28 # in days //bd
+    self.histMax = self.histDuration*24*60*60*1000/self.histInterval #bd
+    self.histLen = 0 #bd
+    self.histWp = 0 #bd
+    self.lastHistoryEntry = -1 # bd
   
   #add an entry to the list
   #do not add if there is already such an entry with newer timestamp
@@ -182,6 +303,62 @@ class AVNNavData():
     self.lastSources[navEntry.data['class']]=navEntry.source
     
     AVNLog.debug("adding entry %s",unicode(navEntry))
+    self.listLock.release()
+
+  def addEnvData(self, data):  # bd
+    try:
+      ctime = data['time']
+    except:
+      ctime = None
+    if ctime == None:
+      ctime = int(time.time()*1000)
+    if self.envEntry != None:
+      if self.envEntry.timestamp != None and ctime < self.envEntry.timestamp:
+        AVNLog.warning("Younger environment data is already present")
+        return
+      self.listLock.acquire()
+    else:
+      self.listLock.acquire()
+      self.envEntry = AVNEnvEntry()
+      self.envEntry.data['class'] = 'BARO'
+      self.graphEntry = AVNGraphEntry()
+      self.graphEntry.data['class'] = 'BAROGRAPH'
+    self.envEntry.timestamp = ctime
+    self.envEntry.data['time'] = ctime
+    try:
+      hPa = data['hPa']
+      if hPa != None:
+        self.envEntry.data['hPa'] = hPa
+    except:
+      pass
+    try:
+      d1h = data['d1h']
+      if d1h != None:
+        self.envEntry.data['d1h'] = d1h
+    except:
+      pass
+    try:
+      d3h = data['d3h']
+      if d3h != None:
+        self.envEntry.data['d3h'] = d3h
+    except:
+      pass
+    while self.lastHistoryEntry < 0 or (ctime - self.lastHistoryEntry) >= self.histInterval:
+      if self.lastHistoryEntry < 0:
+        self.lastHistoryEntry = ctime
+      else:
+        self.lastHistoryEntry += self.histInterval
+      if self.histLen < self.histMax:
+        self.histLen += 1
+        self.hist.append(float(hPa))
+      else:
+        self.histWp += 1
+        if self.histWp >= self.histLen:
+          self.histWb = 0
+        self.hist[self.histWp] = float(hPa)
+      self.graphEntry.timestamp = ctime
+      self.graphEntry.data['time'] = ctime
+      self.graphEntry.data['interval'] = self.histInterval
     self.listLock.release()
   #check for an entry being expired
   #the list must already being locked!
@@ -260,6 +437,28 @@ class AVNNavData():
     AVNLog.ld("getMergedEntries",prefix,suffixlist,rt)
     return rt   
   
+  def getEnvData(self):  # bd
+    return self.envEntry
+
+  def getGraphData(self, scope):  # bd
+    days = self.histDuration;
+    if scope != None:
+      days = int(scope)
+    values = days * 24*60*60*1000/self.histInterval
+    data = self.graphEntry.data
+    if self.histWp == 0:
+      result = self.hist
+    else:
+      result = self.hist[self.histWp:]
+      result.extend(hist[0:self.histWp-1])
+    if values < self.histLen:
+      result = result[(self.histLen-values):]
+    data['hist'] = result.tolist()
+    ctime = int(time.time()*1000)
+    data['timediff'] = ctime - data['time']
+    return self.graphEntry
+
+
   #delete all entries from the list (e.g. when we have to set the time)
   def reset(self): 
     self.listLock.acquire()

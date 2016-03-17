@@ -25,6 +25,7 @@
 #  parts from this software (AIS decoding) are taken from the gpsd project
 #  so refer to this BSD licencse also (see ais.py) or omit ais.py 
 ###############################################################################
+# 2015-12-19: Added barometer and barograph functionality. Berthold Daum (bd)
 import sys
 import os
 import signal
@@ -145,7 +146,7 @@ class AVNChartHandler(AVNWorker):
         chartbase=server.getStringParam('chartbase')
         osdir=server.handlePathmapping(chartbase)
         if osdir is None or not os.path.isdir(osdir):
-          AVNLog.error("unable to find a valid chart directory")
+          AVNLog.error("unable to find a valid chart directory at %s", osdir)
         else:
           for cd in os.listdir(osdir):
             chartdir=os.path.join(osdir,cd)

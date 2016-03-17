@@ -25,6 +25,7 @@
 #  parts from this software (AIS decoding) are taken from the gpsd project
 #  so refer to this BSD licencse also (see ais.py) or omit ais.py 
 ###############################################################################
+# 2015-12-19: Added barometer and barograph functionality. Berthold Daum (bd)
 
 import time
 import socket
@@ -105,7 +106,7 @@ class AVNHTTPServer(SocketServer.ThreadingMixIn,BaseHTTPServer.HTTPServer, AVNWo
       self.basedir=os.getcwd()
     pathmappings=None
     #a list of gemf files (key is the url below charts)
-    self. gemflist={}
+    self.gemflist={}
     marray=cfgparam.get("Directory")
     if marray is not None:
       pathmappings={}
@@ -536,6 +537,10 @@ class AVNHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         rtj=self.handleTrackRequest(requestParam)
       if requestType=='status':
         rtj=self.handleStatusRequest(requestParam)
+      if requestType=='baro':   # bd
+        rtj=self.handleBaroRequest(requestParam)
+      if requestType=='barograph':   # bd
+        rtj=self.handleBarographRequest(requestParam)
       if requestType=='debuglevel':
         rtj=self.handleDebugLevelRequest(requestParam)
       if requestType=='listCharts':
@@ -668,6 +673,13 @@ class AVNHTTPHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
              'info':handler.getInfo()}
       rt.append(entry)       
     return json.dumps({'handler':rt})
+  def handleBaroRequest(self,requestParam): # bd
+    rbaro=self.server.navdata.getEnvData()
+    return json.dumps(rbaro.data)
+  def handleBarographRequest(self,requestParam): # bd //TODO
+    scope = self.getRequestParam(requestParam, 'scope')
+    rbarobraph=self.server.navdata.getGraphData(scope)
+    return json.dumps(rbarobraph.data)
   def handleDebugLevelRequest(self,requestParam):
     rt={'status':'ERROR','info':'missing parameter'}
     level=self.getRequestParam(requestParam,'level')

@@ -1,3 +1,30 @@
+/*
+###############################################################################
+# Copyright (c) 2014-2015, Andreas Vogel andreas@wellenvogel.net
+# parts of software from movable-type
+# http://www.movable-type.co.uk/
+# for their license see the file latlon.js
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a
+#  copy of this software and associated documentation files (the "Software"),
+#  to deal in the Software without restriction, including without limitation
+#  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+#  and/or sell copies of the Software, and to permit persons to whom the
+#  Software is furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included
+#  in all copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+#  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+#  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+#  DEALINGS IN THE SOFTWARE.
+###############################################################################
+* 2015-12-19: Added barometer and barograph functionality. Berthold Daum (bd)
+*/
 
 //variables will be overwritten by properties!
 @topPanelHeight:00px;
@@ -1171,6 +1198,72 @@ button#avb_WpaCancel {
 button#avb_GpsCancel{
   .avn_button_icon_base('images/Cancel40.png');
 }
+
+/*-------------------------------------------------------------
+   baro page //bd
+-------------------------------------------------------------*/
+
+.avn_baro_warning{
+	background-color: fade(@aisWarningColor,@nightModePercent * 1.5) !important;
+}
+
+#avi_baro_page_left{
+  .border-box();
+  border-right: 1px solid;
+}
+#avi_baro_page_right{
+  height: 100%;
+}
+
+.avn_graph{
+  height: 90%;
+  width: 100%;
+}
+
+#avi_baro_page_container{
+  height: 100%;
+  width: 100%;
+}
+
+.avn_baro_hfield{
+  float:left;
+}
+
+.avn_baro_vfield{
+  border-right: 1px solid;
+}
+
+
+.avn_baro_field_label{
+  padding-left: 8px;
+  border-bottom: 1px solid;
+  border-top: 1px solid;
+  background-color: fade(#E2DFDF,@nightModePercent);
+}
+.avn_baro_value{
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+button#avb_BaroCancel {
+  .avn_button_icon_base('images/Cancel40.png');
+}
+
+button#avb_ShowBaro{
+  .avn_button_icon_base('images/baro32.png');
+}
+
+button#avb_BaroZoomIn {
+  .avn_button_icon_base('images/Plus40.png');
+}
+button#avb_BaroZoomOut {
+  .avn_button_icon_base('images/Minus40.png');
+}
+
+button#avb_BaroMagnify {
+  .avn_button_icon_base('images/Magnify40.png');
+}
+
 
 /*-------------------------------------------------------------------------------
     settings page

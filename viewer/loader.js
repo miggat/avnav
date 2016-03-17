@@ -77,6 +77,7 @@
         'nav/gpsdata.js',
         'nav/aisdata.js',
         'nav/routedata.js',
+        'nav/barodata.js',
         'map/drawing.js',
         'map/mapholder.js',
         'map/navlayer.js',
@@ -94,6 +95,7 @@
         'gui/routepage.js',
         'gui/downloadpage.js',
         'gui/wpapage.js',
+        'gui/baropage.js',
         'avnav_viewer.js'
         //ENDFILES
     ];

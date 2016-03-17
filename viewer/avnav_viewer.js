@@ -128,6 +128,9 @@ var propertyDefinitions=function(){
             NMEA: new avnav.util.Property(    "images/GreenBubble40.png"),
             ERROR: new avnav.util.Property(   "images/RedBubble40.png")
         },
+        baroQueryTimeout: new avnav.util.Property(5000, "Barometer", avnav.util.PropertyType.RANGE, [1000, 10000, 100]), // bd
+        barographQueryTimeout: new avnav.util.Property(5, "Barograph(min)", avnav.util.PropertyType.RANGE, [1, 30, 1]), // bd
+        maxBaroErrors: new avnav.util.Property(3), // bd
         nightFade:new avnav.util.Property( 15,"NightDim(%)",avnav.util.PropertyType.RANGE,[1,99]), //in px
         nightChartFade:new avnav.util.Property( 30,"NightChartDim(%)",avnav.util.PropertyType.RANGE,[1,99]), //in %
         //all style members map to less variables
