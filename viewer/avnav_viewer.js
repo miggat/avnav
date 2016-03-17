@@ -167,6 +167,7 @@ function getParam(key)
     return unescape(!!value ? value.toString().replace(/^[^=]+./,"") : "");
 }
 
+var HCDefaults = $.extend(true, {}, Highcharts.getOptions(), {}); // bd - backup HighChart default options
 /**
  * main function called when dom is loaded
  *

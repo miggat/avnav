@@ -56,7 +56,9 @@
         '../libraries/less/less-1.7.3.min.js',
         '../libraries/rangeslider/rangeslider.css',
         '../libraries/rangeslider/rangeslider.js',
-        '../libraries/jscolor/jscolor.js'
+        '../libraries/jscolor/jscolor.js',
+        '../libraries/highcharts/highcharts.js', //bd
+        '../libraries/highcharts/exporting.js' //bd
     ];
     //scripts used in debug mode
     var debug_scripts = [
@@ -123,4 +125,5 @@
             document.write('<scr' + 'ipt type="text/javascript" src="' + scriptname + '"></scr' + 'ipt>');
         }
     }
+
 }());

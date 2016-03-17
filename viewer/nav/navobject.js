@@ -170,14 +170,12 @@ avnav.nav.NavObject=function(propertyHandler){
         edRouteNumPoints: "--",
         edRouteLen: "--",
         edRouteRemain: "--",
-        edRouteEta: "--:--:--",
-        baroHPa: "--",  // bd
-        baro1h: "--",
-        baro3h: "--"
+        edRouteEta: "--:--:--"
     };
     for (var k in this.formattedValues){
         this.registerValueProvider(k,this,this.getFormattedNavValue);
     }
+    this.barodata = new avnav.nav.BaroData(propertyHandler, this);
 };
 
 /**
@@ -333,12 +331,7 @@ avnav.nav.NavObject.prototype.computeValues=function(){
     this.formattedValues.edRouteRemain=this.formatter.formatDecimal(this.data.edRouteRemain,4,1);
     this.formattedValues.edRouteEta=this.data.edRouteEta?this.formatter.formatTime(this.data.edRouteEta):"--:--:--";
 };
-avnav.nav.NavObject.prototype.computeEnvValues = function() {  // bd
-    var baro = this.barodata.getBaroData();
-    this.formattedValues.baroHPa = (baro.hPa !== undefined && baro.hPa != 0) ? this.formatter.formatDecimal(baro.hPa, 1, 1) : "--";
-    this.formattedValues.baro1h = (baro.d1h !== undefined && baro.d1h != 0) ? this.formatter.formatDecimal(baro.d1h, 1, 2) : "--";
-    this.formattedValues.baro3h = (baro.d3h !== undefined && baro.d3h != 0) ? this.formatter.formatDecimal(baro.d3h, 1, 2) : "--"
-};
+
 
 /**
  * get the current map center (lon/lat)
@@ -473,7 +466,6 @@ avnav.nav.NavObject.prototype.routeEvent=function(){
 };
 
 avnav.nav.NavObject.prototype.baroEvent = function() { //bd
-    this.computeEnvValues();
     $(document).trigger(avnav.nav.NavEvent.EVENT_TYPE, new avnav.nav.NavEvent(avnav.nav.NavEventType.BARO, this.getValueNames(), avnav.nav.NavEventSource.NAV, this))
 };
 avnav.nav.NavObject.prototype.barographEvent = function(data) { //bd

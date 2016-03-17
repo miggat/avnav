@@ -73,7 +73,7 @@ avnav.nav.BaroData = function(propertyHandler, navobject) {
     this.NM = this.propertyHandler.getProperties().NM;
     this.startQuery();
     for (var k in this.formattedData) {
-        this.navobject.registerValueProvider(k, this, this.getFormattedValue)
+        this.navobject.registerValueProvider(k, this, this.getFormattedBaroValue)
     }
 };
 avnav.nav.BaroData.prototype.handleBaroResponse = function(data) {

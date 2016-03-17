@@ -117,6 +117,5 @@ if (! avnav) {
         };
     })(jQuery);
 
-    var HCDefaults = $.extend(true, {}, Highcharts.getOptions(), {}); // bd - backup HighChart default options
 
 }

@@ -198,6 +198,10 @@ avnav.gui.Mainpage.prototype.btnMainCancel=function (button,ev) {
     log("main cancel clicked");
     avnav.android.goBack();
 };
+avnav.gui.Mainpage.prototype.btnShowBaro = function(button, ev) {
+    log("ShowBaro clicked");
+    this.gui.showPage("baropage")
+};
 /**
  * create the page instance
  */
