@@ -113,6 +113,10 @@ module.exports = {
                 query:{
                     name: "images/[name].[ext]"
                 }
+            },
+            {
+                test: /\.hbs$/,
+                loader: "handlebars-loader"
             }
 
 

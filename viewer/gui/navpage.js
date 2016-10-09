@@ -3,6 +3,7 @@
  */
 var WpOverlay=require('./wpoverlay.js');
 avnav.provide('avnav.gui.Navpage');
+var waypointItem=require('../templates/waypoint-list-item.hbs');
 
 
 
@@ -528,30 +529,21 @@ avnav.gui.Navpage.prototype.updateRoutePoints=function(opt_force,opt_centerActiv
     var rebuild=opt_force||false;
     if (! rebuild) rebuild=this.lastRoute.differsTo(route);
     this.lastRoute=route.clone();
+    var showLatLon=this.gui.properties.getProperties().routeShowLL;
     if (rebuild){
         //rebuild
-        for (i=0;i<route.points.length;i++){
-            html+='<div class="avn_route_info_point ';
-            html+='">';
-            html+='<div class="avn_route_info_name" />';
-            html+='<span class="avn_more"></span>'
-            if (this.gui.properties.getProperties().routeShowLL) {
-                html += '<div class="avn_route_point_ll">';
-            }
-            else{
-                html += '<div class="avn_route_point_course">';
-            }
-            html+='</div>';
-            html+='</div>';
+        var formattedPoints=route.getFormattedPoints();
+        for (i=0;i<formattedPoints.length;i++){
+            if (showLatLon) formattedPoints[i].showLatLon=true;
+            html+=waypointItem(formattedPoints[i]);
+
         }
         $('#avi_route_info_list').html(html);
-        rebuild=true;
     }
     else {
         //update
     }
     $('#avi_route_info_list').find('.avn_route_info_point').each(function(i,el){
-        var txt=route.points[i].name?route.points[i].name:i+"";
         if (i == active) {
             $(el).addClass('avn_route_info_active_point');
             if (rebuild){
@@ -574,15 +566,6 @@ avnav.gui.Navpage.prototype.updateRoutePoints=function(opt_force,opt_centerActiv
             $(el).removeClass('avn_route_info_active_point');
             $(el).removeClass('avn_route_info_centered');
         }
-        $(el).find('.avn_route_info_name').text(txt);
-        $(el).find('.avn_route_point_ll').html(self.formatter.formatLonLats(route.points[i]));
-        var courseLen="--- &#176;/ ---- nm";
-        if (i>0) {
-            var dst=avnav.nav.NavCompute.computeDistance(route.points[i-1],route.points[i]);
-            courseLen=self.formatter.formatDecimal(dst.course,3,0)+" &#176;/ ";
-            courseLen+=self.formatter.formatDecimal(dst.dtsnm,3,1)+" nm";
-        }
-        $(el).find('.avn_route_point_course').html(courseLen);
         var idx=i;
         if (rebuild) {
             $(el).click(function (ev) {

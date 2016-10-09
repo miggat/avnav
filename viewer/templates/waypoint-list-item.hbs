@@ -1,0 +1,9 @@
+<div class="avn_route_info_point {{addClass}}" data-waypoint-idx="{{idx}}">
+    <div class="avn_route_info_name">{{name}}</div>
+    <span class="avn_more"></span>
+    {{#if showLatLon}}
+        <div class="avn_route_point_ll">{{latlon}}</div>
+    {{else}}
+        <div class="avn_route_point_course">{{course}}&#176;/{{distance}}nm</div>
+    {{/if}}
+</div>

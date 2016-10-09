@@ -2,6 +2,7 @@
  * Created by andreas on 02.05.14.
  */
 avnav.provide('avnav.gui.Routepage');
+var waypointTemplate=require('../templates/waypoint-route-list-item.hbs');
 
 
 
@@ -94,30 +95,32 @@ avnav.gui.Routepage.prototype._updateDisplay=function(){
         $('#avi_routes_headline').text("Edit Inactive Route").removeClass('avn_active_route');
     }
     $('#avi_route_name').val(this.currentRoute.name);
-    for (id=0;id<this.currentRoute.points.length;id++){
-        var wp=this.currentRoute.getPointAtIndex(id);
-        $('#avi_route_list_template').clone()
-            .attr("id","routeInfo-"+id)
-            .attr("wpidx",id)
-            .addClass(this.visibleListEntryClass)
-            .show()
-            .insertAfter('#avi_routepage .avn_route_list_entry:last');
-        this.displayInfo(id,wp);
-        $('#routeInfo-' + id).find('.avn_route_btnDelete').on('click', null, {id: id}, function (ev) {
+    var formattedPoints=this.currentRoute.getFormattedPoints();
+    var showLatLon=this.gui.properties.getProperties().routeShowLL;
+    var html="";
+    for (id=0;id<formattedPoints.length;id++) {
+        if (showLatLon) formattedPoints[id].showLatLon = true;
+        html += waypointTemplate(formattedPoints[id]);
+    }
+    this.selectOnPage('.avn_listcontainer').html(html);
+    for (id=0;id<formattedPoints.length;id++) {
+        this.selectOnPage("[data-waypoint-idx='"+id+"']").find('.avn_route_btnDelete').on('click', null, {id: id}, function (ev) {
             ev.preventDefault();
             var lid = ev.data.id;
             if (!self.currentRoute) return;
-            self.currentRoute.deletePoint(idx);
+            self.currentRoute.deletePoint(lid);
             self._updateDisplay();
+            return false;
         });
 
-        $('#routeInfo-'+id).on('click',null,{id:id},function(ev){
+        this.selectOnPage("[data-waypoint-idx='"+id+"']").on('click',null,{id:id},function(ev){
             ev.preventDefault();
             var lid=ev.data.id;
             if (! self.currentRoute) return;
             //TODO: edit wp
             var wp=self.currentRoute.getPointAtIndex(lid);
             alert("edit wp "+wp.name);
+            return false;
         });
     }
 };
