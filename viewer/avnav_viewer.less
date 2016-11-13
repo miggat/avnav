@@ -363,15 +363,18 @@ html,body {
 }
 .avn_courseWidget{
   width: 7.2em;
+  min-width: 7.2em;
 }
 .avn_distanceWidget{
   width: 9.6em;
+  min-width: 9.6em;
 }
 .avn_speedWidget{
   width: 9.6em;
 }
 .avn_etaWidget{
   width: 6.5em;
+  min-width: 6.5em;
 }
 
 
@@ -451,17 +454,17 @@ html,body {
   background-color: @colorMain;
   .nightColors();
 }
-#leftBottomPosition .avn_widget:last-of-type{
-  width:@navLeftWidgetWidth;
-  margin-right: 0;
-  padding-right: 0;
+
+#avi_nav_bottom .avn_etaWidget{
+  .flex(1);
+}
+#avi_nav_bottom .avn_distanceWidget{
+  .flex(1);
+}
+#avi_nav_bottom .avn_courseWidget{
+  .flex(1);
 }
 
-#leftBottomMarker .avn_widget:last-of-type{
-  width:@navLeftWidgetWidth;
-  margin-left: 0;
-  padding-left: 0;
-}
 .avn_bottom_2rows{
   max-height: 8.3em; //2xbottom_item
 }
@@ -473,6 +476,20 @@ html,body {
 #leftBottomMarker{
   float: left;
   width: 50%;
+  .flexbox();
+  -webkit-flex-wrap: wrap;
+  -webkit-flex-direction: row-reverse;
+  -webkit-box-direction: reverse;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  -webkit-flex-wrap: wrap;
+
+}
+#leftBottomMarker .avn_widget{
+  .flexbox();
+}
+#leftBottomMarkerPos{
+  width: @navLeftWidgetWidth;
 }
 
 
