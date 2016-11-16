@@ -161,6 +161,10 @@ function getParam(key)
 avnav.main=function() {
     //some workaround for lees being broken on IOS browser
     //less.modifyVars();
+    var d = document.documentElement.style;
+    if (('flexWrap' in d) ){//|| ('webkitFlexWrap' in d) || ('msFlexWrap' in d)){
+        $('body').addClass('avn_flexWrap');
+    }
     $("body").show();
 
     if (getParam('log')) avnav.debugMode=true;

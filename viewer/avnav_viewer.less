@@ -455,13 +455,13 @@ html,body {
   .nightColors();
 }
 
-#avi_nav_bottom .avn_etaWidget{
+.avn_flexWrap #avi_nav_bottom .avn_etaWidget{
   .flex(1);
 }
-#avi_nav_bottom .avn_distanceWidget{
+.avn_flexWrap  #avi_nav_bottom .avn_distanceWidget{
   .flex(1);
 }
-#avi_nav_bottom .avn_courseWidget{
+.avn_flexWrap  #avi_nav_bottom .avn_courseWidget{
   .flex(1);
 }
 
@@ -476,6 +476,13 @@ html,body {
 #leftBottomMarker{
   float: left;
   width: 50%;
+
+}
+
+#leftBottomMarker .avn_widget{
+  .avn_float_right();
+}
+.avn_flexWrap #leftBottomMarker{
   .flexbox();
   -webkit-flex-wrap: wrap;
   -webkit-flex-direction: row-reverse;
@@ -483,9 +490,8 @@ html,body {
   flex-direction: row-reverse;
   flex-wrap: wrap;
   -webkit-flex-wrap: wrap;
-
 }
-#leftBottomMarker .avn_widget{
+.avn_flexWrap  #leftBottomMarker .avn_widget{
   .flexbox();
 }
 #leftBottomMarkerPos{
