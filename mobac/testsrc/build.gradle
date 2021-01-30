@@ -4,8 +4,16 @@ apply plugin: 'java'
 def revision="4"
 def mobacJar="Mobile_Atlas_Creator.jar"
 
+repositories {
+    mavenCentral()
+}
+configurations {
+    provided
+    compile.extendsFrom(provided)
+}
 dependencies{
     compile files("$rootDir"+File.separator+"lib"+File.separator+mobacJar)
+    provided 'org.osgeo:proj4j:0.1.0'
 }
 def srcbase=new File(project.rootDir,"src")
 def srcsub="mobac"+File.separator+"mapsources"+File.separator+"mappacks"+File.separator+"avnavbase"
@@ -48,6 +56,9 @@ jar{
         into "META-INF/services/"
         include "mapsources.list"
     }
+    from configurations.provided.asFileTree.files.collect{ 
+        zipTree(it)
+    }
 }
 
 //create a zip file that contains all
@@ -62,6 +73,7 @@ task createZip(type: org.gradle.api.tasks.bundling.Zip){
     doLast{
         logger.lifecycle("created "+archivePath)
     }
+    dependsOn jar
 }
 
 def testdir=new File(project.buildDir,"test")

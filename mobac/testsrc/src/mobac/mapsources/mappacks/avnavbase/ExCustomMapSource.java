@@ -74,7 +74,7 @@ public class ExCustomMapSource implements HttpMapSource {
 	protected boolean mergeLevels=false;
 	
 	@XmlElement(nillable = false, defaultValue = "Custom")
-	private String name = "Custom";
+	protected String name = "Custom";
 
 	@XmlElement(defaultValue = "0")
 	protected int minZoom = 0;
