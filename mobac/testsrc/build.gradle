@@ -52,7 +52,7 @@ jar{
 
 //create a zip file that contains all
 task createZip(type: org.gradle.api.tasks.bundling.Zip){
-    archiveName="avnav-mapsources.zip"
+    archiveName="avnav-mapsources-before22.zip"
     destinationDir new File(project.buildDir,"libs")
     from jar.archivePath
     from project.rootDir,{
